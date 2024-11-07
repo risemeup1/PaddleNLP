@@ -129,17 +129,6 @@ sources += find_end_files("./gpu/append_attn/template_instantiation", ".cu")
 cutlass_dir = "third_party/cutlass"
 nvcc_compile_args = gencode_flags
 update_git_submodule()
-# if not os.path.exists(cutlass_dir) or not os.listdir(cutlass_dir):
-#     if not os.path.exists(cutlass_dir):
-#         os.makedirs(cutlass_dir)
-#     clone_git_repo("v3.5.0", "https://github.com/NVIDIA/cutlass.git", cutlass_dir)
-
-# json_dir = "third_party/nlohmann_json"
-# if not os.path.exists(json_dir) or not os.listdir(json_dir):
-#     if not os.path.exists(json_dir):
-#         os.makedirs(json_dir)
-#     clone_git_repo("v3.11.3", "https://github.com/nlohmann/json.git", json_dir)
-
 nvcc_compile_args += [
     "-O3",
     "-U__CUDA_NO_HALF_OPERATORS__",
