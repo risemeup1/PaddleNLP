@@ -17,7 +17,14 @@ import subprocess
 
 import paddle
 from paddle.utils.cpp_extension import CUDAExtension, setup
+import subprocess
 
+def update_git_submodule():
+    try:
+        subprocess.run(["git", "submodule", "update", "--init"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error occurred while updating git submodule: {str(e)}")
+        raise
 
 def clone_git_repo(version, repo_url, destination_path):
     try:
@@ -121,17 +128,17 @@ sources += find_end_files("./gpu/append_attn/template_instantiation", ".cu")
 
 cutlass_dir = "third_party/cutlass"
 nvcc_compile_args = gencode_flags
+update_git_submodule()
+# if not os.path.exists(cutlass_dir) or not os.listdir(cutlass_dir):
+#     if not os.path.exists(cutlass_dir):
+#         os.makedirs(cutlass_dir)
+#     clone_git_repo("v3.5.0", "https://github.com/NVIDIA/cutlass.git", cutlass_dir)
 
-if not os.path.exists(cutlass_dir) or not os.listdir(cutlass_dir):
-    if not os.path.exists(cutlass_dir):
-        os.makedirs(cutlass_dir)
-    clone_git_repo("v3.5.0", "https://github.com/NVIDIA/cutlass.git", cutlass_dir)
-
-json_dir = "third_party/nlohmann_json"
-if not os.path.exists(json_dir) or not os.listdir(json_dir):
-    if not os.path.exists(json_dir):
-        os.makedirs(json_dir)
-    clone_git_repo("v3.11.3", "https://github.com/nlohmann/json.git", json_dir)
+# json_dir = "third_party/nlohmann_json"
+# if not os.path.exists(json_dir) or not os.listdir(json_dir):
+#     if not os.path.exists(json_dir):
+#         os.makedirs(json_dir)
+#     clone_git_repo("v3.11.3", "https://github.com/nlohmann/json.git", json_dir)
 
 nvcc_compile_args += [
     "-O3",
