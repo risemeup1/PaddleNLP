@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2025 PaddlePaddle Authors
+# Copyright (c) 2025 DeepSeek-Ai/DeepGEMM
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -46,10 +46,6 @@ def get_cuda_home():
 
 def run_cuobjdump(file_path):
     cuda_home = get_cuda_home()
-    if cuda_home:
-        print(f"CUDA is installed at: {cuda_home}")
-    else:
-        print("CUDA_HOME not found. CUDA might not be installed.")
     command = [f"{cuda_home}/bin/cuobjdump", "-sass", file_path]
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     assert result.returncode == 0

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2025 PaddlePaddle Authors
+# Copyright (c) 2025 DeepSeek-Ai/DeepGEMM
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -31,4 +31,4 @@ from .jit_kernels import (
     get_num_sms,
     set_num_sms,
 )
-from .utils import bench, bench_kineto, calc_diff
+from .utils import bench, calc_diff

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2025 PaddlePaddle Authors
+# Copyright (c) 2025 DeepSeek-Ai/DeepGEMM
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
 # SOFTWARE.
 
 import functools
-import time
 from typing import Tuple
 
 import paddle
@@ -214,6 +213,4 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     )
 
     # Run the kernel
-    start = time.time()
     runtime(*args)
-    print("time taken:", f"{time.time()-start}")

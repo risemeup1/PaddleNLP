@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2025 PaddlePaddle Authors
+# Copyright (c) 2025 DeepSeek/DeepGEMM Authors
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,7 @@ third_party_include_dirs = (
 
 
 def create_symlink(source, destination):
-    if os.path.exists(destination):
+    if os.path.lexists(destination):
         if os.path.islink(destination):
             os.unlink(destination)
     os.symlink(source, destination, target_is_directory=True)

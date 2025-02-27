@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (c) 2025 PaddlePaddle Authors
+# Copyright (c) 2025 DeepSeek-Ai/DeepGEMM
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -85,10 +85,6 @@ def get_nvcc_compiler() -> Tuple[str, str]:
     if os.getenv("DG_NVCC_COMPILER"):
         paths.append(os.getenv("DG_NVCC_COMPILER"))
     cuda_home = get_cuda_home()
-    if cuda_home:
-        print(f"CUDA is installed at: {cuda_home}")
-    else:
-        print("CUDA_HOME not found. CUDA might not be installed.")
     paths.append(f"{cuda_home}/bin/nvcc")
 
     # Try to find the first available NVCC compiler
