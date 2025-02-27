@@ -78,14 +78,12 @@ def construct(m: int, k: int, n: int) -> Tuple[Tuple[Tensor, Tensor], Tuple[Tens
 
 def test_gemm() -> None:
     print("Testing GEMM:")
-    for m in (64, 128):
-        for k, n in [(7168, 2112)]:
+    for m in (64, 128, 4096):
+        for k, n in [(7168, 2112), (1536, 24576), (512, 32768), (16384, 7168), (7168, 4096), (2048, 7168)]:
             x_fp8, y_fp8, out, ref_out = construct(m, k, n)
             deep_gemm.gemm_fp8_fp8_bf16_nt(x_fp8, y_fp8, out)
             diff = calc_diff(out, ref_out)
             assert diff < 0.001, f"{m=}, {k=}, {n=}, {diff:.5f}"
-
-    print()
 
 
 if __name__ == "__main__":
