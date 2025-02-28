@@ -25,7 +25,7 @@ from typing import Tuple
 
 import deep_gemm
 import paddle
-from deep_gemm import calc_diff, cell_div, get_col_major_tma_aligned_tensor
+from deep_gemm import calc_diff, ceil_div, get_col_major_tma_aligned_tensor
 from paddle import Tensor
 
 
@@ -50,7 +50,7 @@ def per_token_cast_to_fp8(x: Tensor) -> Tuple[Tensor, Tensor]:
 def per_block_cast_to_fp8(x: Tensor) -> Tuple[Tensor, Tensor]:
     assert x.dim() == 2
     m, n = x.shape
-    x_padded = paddle.zeros((cell_div(m, 128) * 128, cell_div(n, 128) * 128), dtype=x.dtype)
+    x_padded = paddle.zeros((ceil_div(m, 128) * 128, ceil_div(n, 128) * 128), dtype=x.dtype)
     x_padded[:m, :n] = x
     x_view = paddle.view(x_padded, (-1, 128, x_padded.shape[1] // 128, 128))
 
