@@ -24,11 +24,12 @@ import paddle
 
 from . import jit
 from .jit_kernels import (
-    cell_div,
+    ceil_div,
     gemm_fp8_fp8_bf16_nt,
     get_col_major_tma_aligned_tensor,
     get_m_alignment_for_contiguous_layout,
     get_num_sms,
+    m_grouped_gemm_fp8_fp8_bf16_nt_contiguous,
     set_num_sms,
 )
 from .utils import bench, calc_diff

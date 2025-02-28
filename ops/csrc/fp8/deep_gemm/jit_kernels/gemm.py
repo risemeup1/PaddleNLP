@@ -28,7 +28,7 @@ from paddle import Tensor
 
 from .tuner import jit_tuner
 from .utils import (
-    cell_div,
+    ceil_div,
     get_col_major_tma_aligned_tensor,
     get_m_alignment_for_contiguous_layout,
     get_num_sms,
@@ -72,7 +72,7 @@ def get_smem_size(num_stages: int, k: int, block_m: int, block_n: int, block_k: 
     smem_a_per_stage = block_m * block_k
     smem_scales_a_per_stage = block_m * 4
     smem_b_per_stage = block_n * block_k
-    smem_scales_b = cell_div(k, block_k) * 4
+    smem_scales_b = ceil_div(k, block_k) * 4
     smem_barrier = num_stages * 8 * 2
 
     smem_size = 0
@@ -80,12 +80,11 @@ def get_smem_size(num_stages: int, k: int, block_m: int, block_n: int, block_k: 
     smem_size += num_stages * smem_a_per_stage
     smem_size += num_stages * smem_scales_a_per_stage
     smem_size += num_stages * smem_b_per_stage
-    smem_size += smem_scales_b * (1 if block_k % block_n == 0 else 2)
+    smem_size += ceil_div(smem_scales_b * (1 if block_k % block_n == 0 else 2), 8) * 8
     smem_size += smem_barrier
     return smem_size
 
 
-@functools.lru_cache()
 def get_best_configs(
     m: int, n: int, k: int, num_groups: int, num_sms: int, is_grouped_contiguous: bool = False
 ) -> Tuple[int, int, int, int, int]:
@@ -97,8 +96,8 @@ def get_best_configs(
     block_ns = tuple(range(16, 129, 8))
 
     fix_wave_saturate = lambda x: num_sms if x == 0 else x
-    get_num_waves = lambda bm, bn: (cell_div(cell_div(m, bm) * cell_div(n, bn) * num_groups, num_sms) if bm else None)
-    get_last_wave_util = lambda bm, bn: fix_wave_saturate((cell_div(m, bm) * cell_div(n, bn) * num_groups) % num_sms)
+    get_num_waves = lambda bm, bn: (ceil_div(ceil_div(m, bm) * ceil_div(n, bn) * num_groups, num_sms) if bm else None)
+    get_last_wave_util = lambda bm, bn: fix_wave_saturate((ceil_div(m, bm) * ceil_div(n, bn) * num_groups) % num_sms)
 
     # Decide block sizes by waves
     best_block_m, best_block_n = None, None
@@ -115,7 +114,8 @@ def get_best_configs(
                 util = get_last_wave_util(block_m, block_n)
                 best_util = get_last_wave_util(best_block_m, best_block_n)
                 success = util > best_util or (
-                    util == best_util and (block_n >= best_block_n and block_m <= best_block_m)
+                    util == best_util
+                    and (block_m > best_block_m or (block_m == best_block_m and block_n < best_block_n))
                 )
             best_block_m, best_block_n = (block_m, block_n) if success else (best_block_m, best_block_n)
     assert best_block_m is not None and best_block_n is not None
@@ -138,6 +138,42 @@ def get_best_configs(
     return best_block_m, best_block_n, best_num_stages, best_num_tma_multicast, best_smem_size
 
 
+@functools.lru_cache()
+def auto_tuning_with_compilation(m, n, k):
+    global includes, template
+    num_sms = get_num_sms()
+    block_m, block_n, num_stages, num_tma_multicast, smem_size = get_best_configs(m, n, k, 1, num_sms)
+    runtime = jit_tuner.compile_and_tune(
+        m,
+        n,
+        k,
+        name="gemm_fp8_fp8_bf16_nt",
+        keys={
+            "BLOCK_M": block_m,
+            "BLOCK_N": block_n,
+            "K": k,
+            "N": n,
+            "NUM_STAGES": num_stages,
+            "NUM_TMA_MULTICAST": num_tma_multicast,
+        },
+        space=(),
+        includes=includes,
+        arg_defs=(
+            ("lhs", paddle.float8_e4m3fn),
+            ("lhs_scales", paddle.float32),
+            ("rhs", paddle.float8_e4m3fn),
+            ("rhs_scales", paddle.float32),
+            ("out", paddle.bfloat16),
+            ("m", int),
+            ("stream", paddle.device.cuda.Stream),
+            ("num_sms", int),
+            ("smem_size", int),
+        ),
+        template=template,
+    )
+    return runtime, num_sms, smem_size
+
+
 def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor], out: Tensor) -> None:
     """
     Do a normal GEMM with FP8 inputs and BF16 output, with 1x128 LHS scaling and 128x128 RHS scaling.
@@ -158,7 +194,6 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     m, k = lhs.shape
     n, k_ = rhs.shape
     m_, n_ = out.shape
-
     assert n % 64 == 0 and k % 128 == 0
 
     # # Type and shape checks
@@ -179,38 +214,8 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     # Do nothing if `m` is zero
     if m == 0:
         return
-
-    # Auto-tuning with compilation
-    global includes, template
+    runtime, num_sms, smem_size = auto_tuning_with_compilation(m, n, k)
     num_sms = get_num_sms()
-    block_m, block_n, num_stages, num_tma_multicast, smem_size = get_best_configs(m, n, k, 1, num_sms)
     args = (lhs, lhs_scales, rhs, rhs_scales, out, m, paddle.device.cuda.current_stream(), num_sms, smem_size)
-    runtime = jit_tuner.compile_and_tune(
-        name="gemm_fp8_fp8_bf16_nt",
-        keys={
-            "N": n,
-            "K": k,
-            "BLOCK_M": block_m,
-            "BLOCK_N": block_n,
-            "NUM_STAGES": num_stages,
-            "NUM_TMA_MULTICAST": num_tma_multicast,
-        },
-        space=(),
-        includes=includes,
-        arg_defs=(
-            ("lhs", paddle.float8_e4m3fn),
-            ("lhs_scales", paddle.float32),
-            ("rhs", paddle.float8_e4m3fn),
-            ("rhs_scales", paddle.float32),
-            ("out", paddle.bfloat16),
-            ("m", int),
-            ("stream", paddle.device.cuda.Stream),
-            ("num_sms", int),
-            ("smem_size", int),
-        ),
-        template=template,
-        args=args,
-    )
-
-    # Run the kernel
+    # Run the kernel.
     runtime(*args)

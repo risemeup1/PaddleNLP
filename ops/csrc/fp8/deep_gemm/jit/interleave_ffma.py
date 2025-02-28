@@ -45,8 +45,8 @@ def get_cuda_home():
 
 
 def run_cuobjdump(file_path):
-    cuda_home = get_cuda_home()
-    command = [f"{cuda_home}/bin/cuobjdump", "-sass", file_path]
+    CUDA_HOME = get_cuda_home()
+    command = [f"{CUDA_HOME}/bin/cuobjdump", "-sass", file_path]
     result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     assert result.returncode == 0
     return result.stdout
@@ -97,8 +97,6 @@ def validate(m, offset, le_bytes, num_lines):
 
 
 def parse_registers(line):
-    import re
-
     line = re.sub(r"/\*.*?\*/", "", line)
     line = line.replace(";", "")
     tokens = line.strip().split(",")

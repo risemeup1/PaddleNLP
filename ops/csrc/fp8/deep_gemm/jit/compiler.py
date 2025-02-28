@@ -179,7 +179,8 @@ def build(name: str, arg_defs: tuple, code: str) -> Runtime:
     command = [get_nvcc_compiler()[0], src_path, "-o", tmp_so_path, *flags, *[f"-I{d}" for d in include_dirs]]
     if os.getenv("DG_JIT_DEBUG", None) or os.getenv("DG_JIT_PRINT_NVCC_COMMAND", False):
         print(f"Compiling JIT runtime {name} with command {command}")
-    assert subprocess.check_call(command) == 0, f"Failed to compile {src_path}"
+    return_code = subprocess.check_call(command)
+    assert return_code == 0, f"Failed to compile {src_path}"
 
     # Interleave FFMA reuse
     if enable_sass_opt:

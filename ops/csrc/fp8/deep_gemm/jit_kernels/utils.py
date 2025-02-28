@@ -51,7 +51,7 @@ def get_num_sms() -> int:
     return _num_sms
 
 
-def cell_div(x: int, y: int) -> int:
+def ceil_div(x: int, y: int) -> int:
     """
     Perform ceiling division of two integers.
 
@@ -93,7 +93,7 @@ def get_tma_aligned_size(x: int, element_size: int) -> int:
     tma_alignment_bytes = 16
     assert tma_alignment_bytes % element_size == 0
     alignment = tma_alignment_bytes // element_size
-    return cell_div(x, alignment) * alignment
+    return ceil_div(x, alignment) * alignment
 
 
 def get_col_major_tma_aligned_tensor(x: paddle.tensor) -> paddle.tensor:
@@ -118,11 +118,12 @@ def get_col_major_tma_aligned_tensor(x: paddle.tensor) -> paddle.tensor:
     aligned_m = get_tma_aligned_size(m, x.element_size())
 
     # The last kernel gives a column-major TMA aligned layout
-    # if x.stride(0) == aligned_m * n and x.stride(1) == 1 and x.stride(2) == aligned_m:
-    #    return x.squeeze(0) if remove_dim else x
+    if x.strides[0] == aligned_m * n and x.strides[1] == 1 and x.strides[2] == aligned_m:
+        return x.squeeze(0) if remove_dim else x
 
     # Normal layout requires transposing
     # aligned_x = paddle.transpose(paddle.empty((b, n, aligned_m), dtype=x.dtype), 1, 2)
     aligned_x = paddle.transpose(paddle.empty((b, n, aligned_m), dtype=x.dtype), perm=[0, 2, 1])
     aligned_x[:, :m, :] = x
+    aligned_x = aligned_x[:, :m, :]
     return aligned_x.squeeze(0) if remove_dim else aligned_x
