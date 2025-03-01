@@ -106,7 +106,7 @@ def m_grouped_gemm_fp8_fp8_bf16_nt_contiguous(
     LHS, RHS, RHS scaling factors, and output tensors must be in contiguous format.
     RHS and RHS scaling factors are required to be transposed.
     The LHS scaling tensor requires TMA-aligned transposed format, if your input does not match the requirement,
-        this function will do a transposing with a set of slow PyTorch operations.
+        this function will do a transposing with a set of slow Paddle operations.
     On the M axis, inputs are grouped into several batches, of which batch sizes aligned to
         `get_m_alignment_for_contiguous_layout()` (128).
 
@@ -175,7 +175,7 @@ def m_grouped_gemm_fp8_fp8_bf16_nt_masked(
     LHS, RHS, RHS scaling factors, and output tensors must be in contiguous format.
     RHS and RHS scaling factors are required to be transposed.
     The LHS scaling tensor requires TMA-aligned transposed format, if your input does not match the requirement,
-        this function will do a transposing with a set of slow PyTorch operations.
+        this function will do a transposing with a set of slow Paddle operations.
     Moreover, this alignment requirement is different with the contiguous-format kernel, as we require that each batch
         should be separately transposed.
 

@@ -179,7 +179,7 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     LHS, RHS, RHS scaling factors, and output tensors must be in contiguous format.
     RHS and RHS scaling factors are required to be transposed.
     The LHS scaling tensor requires TMA-aligned transposed format, if your input does not match the requirement,
-        this function will do a transposing with a set of slow PyTorch operations.
+        this function will do a transposing with a set of slow Paddle operations.
 
     Arguments:
         lhs: the first element is an FP8 tensor (typed `paddle.float8_e4m3fn`) of shape `[m, k]`,
