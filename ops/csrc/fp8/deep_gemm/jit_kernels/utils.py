@@ -21,6 +21,7 @@
 # SOFTWARE.
 
 import paddle
+from paddle import Tensor
 
 _num_sms = None
 
@@ -33,7 +34,7 @@ def set_num_sms(num_sms: int) -> None:
         num_sms: the desired maximum SM count for all GEMM kernels to use.
     """
     global _num_sms
-    assert 0 < num_sms <= paddle.device.cuda.get_device_properties().multi_processor_count
+    assert 0 < num_sms <= paddle.device.cuda.get_device_properties(device="cuda").multi_processor_count
     _num_sms = num_sms
 
 
@@ -96,7 +97,7 @@ def get_tma_aligned_size(x: int, element_size: int) -> int:
     return ceil_div(x, alignment) * alignment
 
 
-def get_col_major_tma_aligned_tensor(x: paddle.tensor) -> paddle.tensor:
+def get_col_major_tma_aligned_tensor(x: Tensor) -> Tensor:
     """
     Returns TMA-aligned transposed format of the input tensor. `paddle.transpose` will be called if necessary.
     If the input tensor is already column-major layout and 16-byte aligned along the M axis
@@ -122,7 +123,6 @@ def get_col_major_tma_aligned_tensor(x: paddle.tensor) -> paddle.tensor:
         return x.squeeze(0) if remove_dim else x
 
     # Normal layout requires transposing
-    # aligned_x = paddle.transpose(paddle.empty((b, n, aligned_m), dtype=x.dtype), 1, 2)
     aligned_x = paddle.transpose(paddle.empty((b, n, aligned_m), dtype=x.dtype), perm=[0, 2, 1])
     aligned_x[:, :m, :] = x
     aligned_x = aligned_x[:, :m, :]

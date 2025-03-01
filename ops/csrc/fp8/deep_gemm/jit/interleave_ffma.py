@@ -19,29 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import argparse
 import mmap
 import os
 import re
 import subprocess
 
-
-def get_cuda_home():
-    cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
-    if cuda_home:
-        return cuda_home
-
-    try:
-        which_cmd = "which nvcc"
-
-        nvcc_path = os.popen(which_cmd).read().strip()
-        if nvcc_path:
-            return os.path.dirname(os.path.dirname(nvcc_path))
-    except Exception:
-        pass
-
-    return None
+from ..utils import get_cuda_home
 
 
 def run_cuobjdump(file_path):

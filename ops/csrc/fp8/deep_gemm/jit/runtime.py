@@ -24,7 +24,7 @@ import ctypes
 import os
 from typing import Optional
 
-import paddle
+from paddle import Tensor
 
 from .template import map_ctype
 
@@ -58,7 +58,7 @@ class Runtime:
         assert len(args) == len(self.args), f"Expected {len(self.args)} arguments, got {len(args)}"
         cargs = []
         for arg, (name, dtype) in zip(args, self.args):
-            if isinstance(arg, paddle.Tensor):
+            if isinstance(arg, Tensor):
                 assert arg.dtype == dtype, f"Expected tensor dtype `{dtype}` for `{name}`, got `{arg.dtype}`"
             else:
                 assert isinstance(arg, dtype), f"Expected built-in type `{dtype}` for `{name}`, got `{type(arg)}`"

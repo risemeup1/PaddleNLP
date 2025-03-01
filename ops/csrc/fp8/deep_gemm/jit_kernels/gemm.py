@@ -19,7 +19,6 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import functools
 from typing import Tuple
 
@@ -180,7 +179,7 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     LHS, RHS, RHS scaling factors, and output tensors must be in contiguous format.
     RHS and RHS scaling factors are required to be transposed.
     The LHS scaling tensor requires TMA-aligned transposed format, if your input does not match the requirement,
-        this function will do a transposing with a set of slow Paddle operations.
+        this function will do a transposing with a set of slow PyTorch operations.
 
     Arguments:
         lhs: the first element is an FP8 tensor (typed `paddle.float8_e4m3fn`) of shape `[m, k]`,
@@ -196,7 +195,7 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     m_, n_ = out.shape
     assert n % 64 == 0 and k % 128 == 0
 
-    # # Type and shape checks
+    # Type and shape checks
     assert m == m_ and n == n_ and k == k_
     assert n > 0 and k > 0
     assert lhs_scales.shape == [m, (k + 127) // 128]
@@ -215,7 +214,6 @@ def gemm_fp8_fp8_bf16_nt(lhs: Tuple[Tensor, Tensor], rhs: Tuple[Tensor, Tensor],
     if m == 0:
         return
     runtime, num_sms, smem_size = auto_tuning_with_compilation(m, n, k)
-    num_sms = get_num_sms()
     args = (lhs, lhs_scales, rhs, rhs_scales, out, m, paddle.device.cuda.current_stream(), num_sms, smem_size)
     # Run the kernel.
     runtime(*args)

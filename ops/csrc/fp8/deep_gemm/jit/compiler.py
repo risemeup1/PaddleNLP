@@ -28,6 +28,7 @@ import subprocess
 import uuid
 from typing import Tuple
 
+from ..utils import get_cuda_home
 from . import interleave_ffma
 from .runtime import Runtime, RuntimeCache
 from .template import typename_map
@@ -39,23 +40,6 @@ def hash_to_hex(s: str) -> str:
     md5 = hashlib.md5()
     md5.update(s.encode("utf-8"))
     return md5.hexdigest()[0:12]
-
-
-def get_cuda_home():
-    cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
-    if cuda_home:
-        return cuda_home
-
-    try:
-        which_cmd = "which nvcc"
-
-        nvcc_path = os.popen(which_cmd).read().strip()
-        if nvcc_path:
-            return os.path.dirname(os.path.dirname(nvcc_path))
-    except Exception:
-        pass
-
-    return None
 
 
 @functools.lru_cache(maxsize=None)
@@ -84,8 +68,8 @@ def get_nvcc_compiler() -> Tuple[str, str]:
     paths = []
     if os.getenv("DG_NVCC_COMPILER"):
         paths.append(os.getenv("DG_NVCC_COMPILER"))
-    cuda_home = get_cuda_home()
-    paths.append(f"{cuda_home}/bin/nvcc")
+    CUDA_HOME = get_cuda_home()
+    paths.append(f"{CUDA_HOME}/bin/nvcc")
 
     # Try to find the first available NVCC compiler
     least_version_required = "12.3"
@@ -151,6 +135,7 @@ def build(name: str, arg_defs: tuple, code: str) -> Runtime:
     cxx_flags = ["-fPIC", "-O3", "-Wno-deprecated-declarations", "-Wno-abi"]
     flags = [*nvcc_flags, f'--compiler-options={",".join(cxx_flags)}']
     include_dirs = [get_jit_include_dir()]
+
     # Build signature
     enable_sass_opt = get_nvcc_compiler()[1] <= "12.8" and int(os.getenv("DG_DISABLE_FFMA_INTERLEAVE", 0)) == 0
     signature = f"{name}$${get_deep_gemm_version()}$${code}$${get_nvcc_compiler()}$${flags}$${enable_sass_opt}"
@@ -174,7 +159,6 @@ def build(name: str, arg_defs: tuple, code: str) -> Runtime:
     # Compile into a temporary SO file
     so_path = f"{path}/kernel.so"
     tmp_so_path = f"{make_tmp_dir()}/nvcc.tmp.{str(uuid.uuid4())}.{hash_to_hex(so_path)}.so"
-
     # Compile
     command = [get_nvcc_compiler()[0], src_path, "-o", tmp_so_path, *flags, *[f"-I{d}" for d in include_dirs]]
     if os.getenv("DG_JIT_DEBUG", None) or os.getenv("DG_JIT_PRINT_NVCC_COMMAND", False):

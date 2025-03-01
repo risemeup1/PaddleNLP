@@ -49,9 +49,26 @@ def bench(fn, num_warmups: int = 5, num_tests: int = 10, high_precision: bool = 
     for i in range(num_tests):
         fn()
     end_event.record()
-    paddle.device.cuda.synchronize()
+    paddle.cuda.synchronize()
 
     return start_event.elapsed_time(end_event) / num_tests
+
+
+def get_cuda_home():
+    cuda_home = os.environ.get("CUDA_HOME") or os.environ.get("CUDA_PATH")
+    if cuda_home:
+        return cuda_home
+
+    try:
+        which_cmd = "which nvcc"
+
+        nvcc_path = os.popen(which_cmd).read().strip()
+        if nvcc_path:
+            return os.path.dirname(os.path.dirname(nvcc_path))
+    except Exception:
+        pass
+
+    return None
 
 
 class empty_suppress:

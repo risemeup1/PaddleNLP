@@ -20,8 +20,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import paddle
-
 from . import jit
 from .jit_kernels import (
     ceil_div,
@@ -30,6 +28,7 @@ from .jit_kernels import (
     get_m_alignment_for_contiguous_layout,
     get_num_sms,
     m_grouped_gemm_fp8_fp8_bf16_nt_contiguous,
+    m_grouped_gemm_fp8_fp8_bf16_nt_masked,
     set_num_sms,
 )
-from .utils import bench, calc_diff
+from .utils import bench, calc_diff, get_cuda_home

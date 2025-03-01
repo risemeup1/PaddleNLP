@@ -19,13 +19,13 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
 import copy
 import ctypes
 import os
 from typing import Any, Dict, Iterable, Tuple
 
 import paddle
+from paddle import Tensor
 
 # Name map for Python `eval`
 typename_map: Dict[Any, str] = {
@@ -36,7 +36,6 @@ typename_map: Dict[Any, str] = {
     paddle.float8_e4m3fn: "paddle.float8_e4m3fn",
     paddle.device.cuda.Stream: "paddle.device.cuda.Stream",
 }
-
 # `ctype` map for Python casting
 ctype_map: Dict[Any, Any] = {
     **{t: getattr(ctypes, f"c_{t.__name__}") for t in (bool, int, float)},
@@ -61,8 +60,8 @@ genc_map = {
 
 
 def map_ctype(value: Any) -> Any:
-    ctype = ctype_map[value.dtype if isinstance(value, paddle.Tensor) else type(value)]
-    if isinstance(value, paddle.Tensor):
+    ctype = ctype_map[value.dtype if isinstance(value, Tensor) else type(value)]
+    if isinstance(value, Tensor):
         return ctype(value.data_ptr())
     if isinstance(value, paddle.device.cuda.Stream):
         return ctype(value.cuda_stream)
