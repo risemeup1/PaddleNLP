@@ -24,6 +24,7 @@ import ctypes
 import os
 from typing import Optional
 
+import paddle
 from paddle import Tensor
 
 from .template import map_ctype
